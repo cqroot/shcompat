@@ -88,10 +88,31 @@ func (l *Linter) Run() error {
 		return fmt.Errorf("failed to walk directory: %w", err)
 	}
 
-	fmt.Printf("%s %d\n", color.HiCyanString("Files scanned:"), totalFiles)
-	fmt.Printf("%s %d\n", color.HiCyanString("Issues found:"), len(allFailures))
-
+	if len(allFailures) == 0 {
+		color.HiGreen("%s\n", l.FormatSummary(len(allFailures), totalFiles))
+		return nil
+	} else {
+		color.HiRed("%s\n", l.FormatSummary(len(allFailures), totalFiles))
+	}
 	return nil
+}
+
+func (l *Linter) FormatSummary(issues int, files int) string {
+	sb := strings.Builder{}
+
+	if issues == 1 {
+		sb.WriteString("Found 1 issue")
+	} else {
+		fmt.Fprintf(&sb, "Found %d issues", issues)
+	}
+
+	if files == 1 {
+		sb.WriteString(" in 1 file.")
+	} else {
+		fmt.Fprintf(&sb, " in %d files.", files)
+	}
+
+	return sb.String()
 }
 
 // ScanShellScript scans a single shell script file and returns found issues.
