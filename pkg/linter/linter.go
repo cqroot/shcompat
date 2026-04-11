@@ -117,13 +117,13 @@ func (l *Linter) ScanShellScript(filePath string) ([]CheckResult, error) {
 	}
 
 	var failures []CheckResult
-	InspectSyntaxNode(file, filePath, src, &failures)
+	l.InspectSyntaxNode(file, filePath, src, &failures)
 
 	return failures, nil
 }
 
 // Recursively traverse AST to find all errors
-func InspectSyntaxNode(node syntax.Node, filePath string, src string, failures *[]CheckResult) {
+func (l *Linter) InspectSyntaxNode(node syntax.Node, filePath string, src string, failures *[]CheckResult) {
 	syntax.Walk(node, func(n syntax.Node) bool {
 		// Find CallExpr (command call)
 		call, ok := n.(*syntax.CallExpr)
@@ -145,7 +145,7 @@ func InspectSyntaxNode(node syntax.Node, filePath string, src string, failures *
 		if val, exists := checkers[cmdName]; exists {
 			errors := val(call)
 			if len(errors) > 0 {
-				results := constructFailures(errors, filePath, call, src)
+				results := l.constructFailures(errors, filePath, call, src)
 				*failures = append(*failures, results...)
 			}
 		}
@@ -154,9 +154,13 @@ func InspectSyntaxNode(node syntax.Node, filePath string, src string, failures *
 	})
 }
 
-func constructFailures(errors []error, filePath string, call *syntax.CallExpr, src string) []CheckResult {
+func (l *Linter) constructFailures(errors []error, filePath string, call *syntax.CallExpr, src string) []CheckResult {
 	results := make([]CheckResult, len(errors))
 
+	relPath, err := filepath.Rel(l.rootDir, filePath)
+	if err != nil {
+		relPath = filePath
+	}
 	line := int(call.Pos().Line())
 	column := int(call.Pos().Col())
 
@@ -171,7 +175,7 @@ func constructFailures(errors []error, filePath string, call *syntax.CallExpr, s
 
 	for i, err := range errors {
 		res := CheckResult{
-			FilePath: filePath,
+			FilePath: relPath,
 			Line:     line,
 			Column:   column,
 			Text:     text,
