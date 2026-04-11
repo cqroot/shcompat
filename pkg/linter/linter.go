@@ -12,20 +12,32 @@ import (
 
 type Linter struct {
 	rootDir string
+	target  string
 	verbose bool
 }
 
-func New(rootDir string, verbose bool) (*Linter, error) {
+func New(target string, verbose bool) (*Linter, error) {
+	l := Linter{
+		verbose: verbose,
+	}
+
 	var err error
-	rootDir, err = filepath.Abs(rootDir)
+	l.target, err = filepath.Abs(target)
 	if err != nil {
 		return nil, err
 	}
 
-	l := Linter{
-		rootDir: rootDir,
-		verbose: verbose,
+	info, err := os.Stat(l.target)
+	if err != nil {
+		return nil, fmt.Errorf("failed to stat target path: %w", err)
 	}
+
+	if info.IsDir() {
+		l.rootDir = l.target
+	} else {
+		l.rootDir = filepath.Dir(l.target)
+	}
+
 	return &l, nil
 }
 
@@ -42,7 +54,7 @@ func (l *Linter) Run() error {
 	var allFailures []CheckResult
 	var totalFiles int
 
-	err := filepath.Walk(l.rootDir, func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(l.target, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			if l.verbose {
 				fmt.Fprintf(os.Stderr, "walk error at %s: %v\n", path, err)

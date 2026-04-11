@@ -11,13 +11,13 @@ var (
 )
 
 func RunRootCmd(cmd *cobra.Command, args []string) {
-	var rootDir string
-	rootDir = "."
+	var target string
+	target = "."
 	if len(args) > 0 {
-		rootDir = args[0]
+		target = args[0]
 	}
 
-	l, err := linter.New(rootDir, flagVerbose)
+	l, err := linter.New(target, flagVerbose)
 	cobra.CheckErr(err)
 	err = l.Run()
 	cobra.CheckErr(err)
