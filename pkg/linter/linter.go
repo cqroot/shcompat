@@ -78,7 +78,7 @@ func (l *Linter) Run() error {
 			fmt.Printf("Check file: %s\n", path)
 		}
 
-		failures, err := l.ScanShellScript(path)
+		failures, err := l.CheckShellFile(path)
 		if err != nil {
 			if l.verbose {
 				fmt.Fprintf(os.Stderr, "skip file %s: %v\n", path, err)
@@ -127,8 +127,8 @@ func (l *Linter) FormatSummary(issues int, files int) string {
 	return sb.String()
 }
 
-// ScanShellScript scans a single shell script file and returns found issues.
-func (l *Linter) ScanShellScript(filePath string) ([]CheckResult, error) {
+// CheckShellFile scans a single shell script file and returns found issues.
+func (l *Linter) CheckShellFile(filePath string) ([]CheckResult, error) {
 	content, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, err
@@ -136,6 +136,15 @@ func (l *Linter) ScanShellScript(filePath string) ([]CheckResult, error) {
 	src := string(content)
 
 	// Parse shell script
+	failures, err := l.CheckShellContent(src, filePath)
+	if err != nil && l.verbose {
+		fmt.Fprintf(os.Stderr, "failed to parse file %s: %v\n", filePath, err)
+	}
+	return failures, err
+}
+
+// CheckShellContent parses shell script content and returns found issues.
+func (l *Linter) CheckShellContent(src string, filePath string) ([]CheckResult, error) {
 	parser := syntax.NewParser(
 		syntax.Variant(syntax.LangBash),
 		syntax.KeepComments(true),
@@ -144,19 +153,19 @@ func (l *Linter) ScanShellScript(filePath string) ([]CheckResult, error) {
 	file, err := parser.Parse(strings.NewReader(src), filePath)
 	if err != nil {
 		if l.verbose {
-			fmt.Fprintf(os.Stderr, "Parse failed %s: %v\n", filePath, err)
+			fmt.Fprintf(os.Stderr, "failed to parse content in %s: %v\n", filePath, err)
 		}
 		return nil, err
 	}
 
 	var failures []CheckResult
-	l.InspectSyntaxNode(file, filePath, src, &failures)
+	l.CheckSyntaxNode(file, filePath, src, &failures)
 
 	return failures, nil
 }
 
-// Recursively traverse AST to find all errors
-func (l *Linter) InspectSyntaxNode(node syntax.Node, filePath string, src string, failures *[]CheckResult) {
+// CheckSyntaxNode recursively traverse AST to find all errors
+func (l *Linter) CheckSyntaxNode(node syntax.Node, filePath string, src string, failures *[]CheckResult) {
 	syntax.Walk(node, func(n syntax.Node) bool {
 		// Find CallExpr (command call)
 		call, ok := n.(*syntax.CallExpr)
