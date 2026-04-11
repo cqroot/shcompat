@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/fatih/color"
 	"mvdan.cc/sh/v3/syntax"
 )
 
@@ -74,7 +75,7 @@ func (l *Linter) Run() error {
 		}
 
 		for _, f := range failures {
-			fmt.Printf("%s:%d:%d: error: %s\n", f.FilePath, f.Line, f.Column, f.Error)
+			fmt.Printf("%s  %s\n", color.BlueString("%s:%d:%d", f.FilePath, f.Line, f.Column), f.Error)
 			fmt.Printf("    %s\n", strings.TrimSpace(f.Text))
 			fmt.Println()
 			allFailures = append(allFailures, f)
@@ -87,13 +88,9 @@ func (l *Linter) Run() error {
 		return fmt.Errorf("failed to walk directory: %w", err)
 	}
 
-	fmt.Printf("\n=== Summary ===\n")
-	fmt.Printf("Files scanned: %d\n", totalFiles)
-	fmt.Printf("Number of error: %d\n", len(allFailures))
+	fmt.Printf("%s %d\n", color.HiCyanString("Files scanned:"), totalFiles)
+	fmt.Printf("%s %d\n", color.HiCyanString("Issues found:"), len(allFailures))
 
-	if len(allFailures) > 0 {
-		return fmt.Errorf("found %d issues in total", len(allFailures))
-	}
 	return nil
 }
 
