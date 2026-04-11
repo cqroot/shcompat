@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"github.com/cqroot/shcompat/pkg/linter"
+	"github.com/cqroot/shcompat/pkg/version"
 	"github.com/spf13/cobra"
 )
 
@@ -32,6 +33,8 @@ func NewRootCmd() *cobra.Command {
 	}
 
 	c.PersistentFlags().BoolVarP(&flagVerbose, "verbose", "v", false, "verbose output")
+
+	c.Version = version.Get().String()
 
 	return &c
 }
