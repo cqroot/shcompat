@@ -20,6 +20,23 @@ var testCases = []TestCase{
 		expected: []linter.CheckResult{},
 	},
 	{
+		name: "curl command without -g",
+		src:  "curl http://example.com",
+		expected: []linter.CheckResult{
+			{
+				Line:   1,
+				Column: 1,
+				Text:   "curl http://example.com",
+				Rule:   linter.CheckRules["SCPT0300"],
+			},
+		},
+	},
+	{
+		name:     "curl command with -g",
+		src:      "curl -g http://example.com",
+		expected: []linter.CheckResult{},
+	},
+	{
 		name: "sed command with --sandbox",
 		src:  `sed --sandbox 's/foo/bar/' file.txt`,
 		expected: []linter.CheckResult{
@@ -27,7 +44,7 @@ var testCases = []TestCase{
 				Line:   1,
 				Column: 1,
 				Text:   "sed --sandbox 's/foo/bar/' file.txt",
-				Error:  linter.ErrSedSandboxNotSupported,
+				Rule:   linter.CheckRules["SCPT1900"],
 			},
 		},
 	},
@@ -39,7 +56,7 @@ var testCases = []TestCase{
 				Line:   1,
 				Column: 3,
 				Text:   "sed --sandbox 's/foo/bar/' file.txt",
-				Error:  linter.ErrSedSandboxNotSupported,
+				Rule:   linter.CheckRules["SCPT1900"],
 			},
 		},
 	},
@@ -51,30 +68,13 @@ var testCases = []TestCase{
 				Line:   1,
 				Column: 1,
 				Text:   "sed --sandbox 's/foo/bar/' file.txt",
-				Error:  linter.ErrSedSandboxNotSupported,
+				Rule:   linter.CheckRules["SCPT1900"],
 			},
 		},
 	},
 	{
 		name:     "sed command without --sandbox",
 		src:      `sed 's/foo/bar/' file.txt`,
-		expected: []linter.CheckResult{},
-	},
-	{
-		name: "curl command without -g",
-		src:  "curl http://example.com",
-		expected: []linter.CheckResult{
-			{
-				Line:   1,
-				Column: 1,
-				Text:   "curl http://example.com",
-				Error:  linter.ErrCurlMissingGloboff,
-			},
-		},
-	},
-	{
-		name:     "curl command with -g",
-		src:      "curl -g http://example.com",
 		expected: []linter.CheckResult{},
 	},
 	{
@@ -85,7 +85,7 @@ var testCases = []TestCase{
 				Line:   1,
 				Column: 1,
 				Text:   "realpath /path/to/file",
-				Error:  linter.ErrRealpathNotSupported,
+				Rule:   linter.CheckRules["SCPT1800"],
 			},
 		},
 	},
@@ -113,7 +113,7 @@ func TestLinter(t *testing.T) {
 				require.Equal(t, tt.expected[i].Line, res.Line)
 				require.Equal(t, tt.expected[i].Column, res.Column)
 				require.Equal(t, tt.expected[i].Text, res.Text)
-				require.Equal(t, tt.expected[i].Error, res.Error)
+				require.Equal(t, tt.expected[i].Rule, res.Rule)
 			}
 		})
 	}

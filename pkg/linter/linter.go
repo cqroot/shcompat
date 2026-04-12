@@ -47,7 +47,7 @@ type CheckResult struct {
 	Column   int
 	Text     string
 	Cmd      *syntax.CallExpr
-	Error    error
+	Rule     CheckRule
 }
 
 func (l *Linter) Run() error {
@@ -87,15 +87,14 @@ func (l *Linter) Run() error {
 		}
 
 		for _, f := range failures {
-			fmt.Printf("%s  %s\n", color.BlueString("%s:%d:%d", f.FilePath, f.Line, f.Column), f.Error)
-			fmt.Printf("    %s\n", strings.TrimSpace(f.Text))
+			fmt.Printf("%s: %s\n", color.HiMagentaString(f.Rule.Id), f.Rule.Error)
+			fmt.Printf("    %s %s\n", color.HiBlueString("%s:%d:%d", f.FilePath, f.Line, f.Column), strings.TrimSpace(f.Text))
 			fmt.Println()
 			allFailures = append(allFailures, f)
 		}
 
 		return nil
 	})
-
 	if err != nil {
 		return fmt.Errorf("failed to walk directory: %w", err)
 	}
@@ -185,9 +184,9 @@ func (l *Linter) CheckSyntaxNode(node syntax.Node, filePath string, src string, 
 
 		cmdName := strings.TrimSuffix(lit.Value, ".exe")
 		if val, exists := checkers[cmdName]; exists {
-			errors := val(call)
-			if len(errors) > 0 {
-				results := l.constructFailures(errors, filePath, call, src)
+			rules := val(call)
+			if len(rules) > 0 {
+				results := l.constructFailures(rules, filePath, call, src)
 				*failures = append(*failures, results...)
 			}
 		}
@@ -196,8 +195,8 @@ func (l *Linter) CheckSyntaxNode(node syntax.Node, filePath string, src string, 
 	})
 }
 
-func (l *Linter) constructFailures(errors []error, filePath string, call *syntax.CallExpr, src string) []CheckResult {
-	results := make([]CheckResult, len(errors))
+func (l *Linter) constructFailures(rules []CheckRule, filePath string, call *syntax.CallExpr, src string) []CheckResult {
+	results := make([]CheckResult, len(rules))
 
 	relPath, err := filepath.Rel(l.rootDir, filePath)
 	if err != nil {
@@ -215,14 +214,14 @@ func (l *Linter) constructFailures(errors []error, filePath string, call *syntax
 		}
 	}
 
-	for i, err := range errors {
+	for i, rule := range rules {
 		res := CheckResult{
 			FilePath: relPath,
 			Line:     line,
 			Column:   column,
 			Text:     text,
 			Cmd:      call,
-			Error:    err,
+			Rule:     rule,
 		}
 		results[i] = res
 	}

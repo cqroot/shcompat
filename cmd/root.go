@@ -6,9 +6,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	flagVerbose bool
-)
+var flagVerbose bool
 
 func RunRootCmd(cmd *cobra.Command, args []string) {
 	var target string
