@@ -94,7 +94,7 @@ var testCases = []TestCase{
 func TestLinter(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			l, err := linter.New("", false)
+			l, err := linter.New("")
 			if err != nil {
 				t.Fatalf("failed to create linter: %v", err)
 			}
