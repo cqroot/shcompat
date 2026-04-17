@@ -32,3 +32,9 @@
   </p>
   <hr>
 </div>
+
+## Rules
+
+- [SCPT0300: curl command is missing ‐g or ‐‐globoff argument](https://github.com/cqroot/shcompat/wiki/SCPT0300:-curl-command-is-missing-%E2%80%90g-or-%E2%80%90%E2%80%90globoff-argument)
+- [SCPT1800: realpath command is not supported in older coreutils versions](https://github.com/cqroot/shcompat/wiki/SCPT1800:-realpath-command-is-not-supported-in-older-coreutils-versions)
+- [SCPT1900: sed ‐‐sandbox is not supported in older sed versions](https://github.com/cqroot/shcompat/wiki/SCPT1900:-sed-%E2%80%90%E2%80%90sandbox-is-not-supported-in-older-sed-versions)
