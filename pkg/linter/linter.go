@@ -58,7 +58,15 @@ type CheckResult struct {
 	Rule     CheckRule        `json:"rule"`
 }
 
-func (l *Linter) Run() error {
+type ResultCode int
+
+const (
+	ResultOK          ResultCode = 0
+	ResultIssuesFound ResultCode = 1
+	ResultError       ResultCode = 2
+)
+
+func (l *Linter) Run() (ResultCode, error) {
 	var allFailures []CheckResult
 	var totalFiles int
 
@@ -109,20 +117,20 @@ func (l *Linter) Run() error {
 		return nil
 	})
 	if err != nil {
-		return fmt.Errorf("failed to walk directory: %w", err)
-	}
-
-	if l.format != FormatTTY {
-		return nil
+		return ResultError, fmt.Errorf("failed to walk directory: %w", err)
 	}
 
 	if len(allFailures) == 0 {
-		color.HiGreen("%s\n", l.FormatSummary(len(allFailures), totalFiles))
-		return nil
-	} else {
+		if l.format == FormatTTY {
+			color.HiGreen("%s\n", l.FormatSummary(len(allFailures), totalFiles))
+		}
+		return ResultOK, nil
+	}
+
+	if l.format == FormatTTY {
 		color.HiRed("%s\n", l.FormatSummary(len(allFailures), totalFiles))
 	}
-	return nil
+	return ResultIssuesFound, nil
 }
 
 func (l *Linter) FormatSummary(issues int, files int) string {
