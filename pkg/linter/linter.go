@@ -14,11 +14,19 @@ type Linter struct {
 	rootDir string
 	target  string
 	verbose bool
+	format  Format
 }
 
-func New(target string, verbose bool) (*Linter, error) {
+type Option func(*Linter)
+
+func New(target string, opts ...Option) (*Linter, error) {
 	l := Linter{
-		verbose: verbose,
+		verbose: false,
+		format:  FormatTTY,
+	}
+
+	for _, opt := range opts {
+		opt(&l)
 	}
 
 	var err error
@@ -42,12 +50,12 @@ func New(target string, verbose bool) (*Linter, error) {
 }
 
 type CheckResult struct {
-	FilePath string
-	Line     int
-	Column   int
-	Text     string
-	Cmd      *syntax.CallExpr
-	Rule     CheckRule
+	FilePath string           `json:"file"`
+	Line     int              `json:"line"`
+	Column   int              `json:"column"`
+	Text     string           `json:"text"`
+	Cmd      *syntax.CallExpr `json:"cmd"`
+	Rule     CheckRule        `json:"rule"`
 }
 
 func (l *Linter) Run() error {
@@ -86,17 +94,26 @@ func (l *Linter) Run() error {
 			return nil
 		}
 
-		for _, f := range failures {
-			fmt.Printf("%s: %s\n", color.HiMagentaString(f.Rule.Id), f.Rule.Error)
-			fmt.Printf("    %s %s\n", color.HiBlueString("%s:%d:%d", f.FilePath, f.Line, f.Column), strings.TrimSpace(f.Text))
-			fmt.Println()
-			allFailures = append(allFailures, f)
+		switch l.format {
+		case FormatTTY:
+			fmt.Print(ToTTY(failures))
+		case FormatJSON:
+			jsonStr, err := ToJSON(failures)
+			if err != nil {
+				return err
+			}
+			fmt.Println(jsonStr)
 		}
+		allFailures = append(allFailures, failures...)
 
 		return nil
 	})
 	if err != nil {
 		return fmt.Errorf("failed to walk directory: %w", err)
+	}
+
+	if l.format != FormatTTY {
+		return nil
 	}
 
 	if len(allFailures) == 0 {

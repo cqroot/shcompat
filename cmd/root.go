@@ -6,7 +6,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var flagVerbose bool
+var (
+	flagVerbose bool
+	flagFormat  string
+)
 
 func RunRootCmd(cmd *cobra.Command, args []string) {
 	var target string
@@ -15,7 +18,13 @@ func RunRootCmd(cmd *cobra.Command, args []string) {
 		target = args[0]
 	}
 
-	l, err := linter.New(target, flagVerbose)
+	outputFormat, err := linter.ParseFormat(flagFormat)
+	cobra.CheckErr(err)
+
+	l, err := linter.New(target,
+		linter.WithVerbose(flagVerbose),
+		linter.WithFormat(outputFormat),
+	)
 	cobra.CheckErr(err)
 	err = l.Run()
 	cobra.CheckErr(err)
@@ -31,6 +40,7 @@ func NewRootCmd() *cobra.Command {
 	}
 
 	c.PersistentFlags().BoolVarP(&flagVerbose, "verbose", "v", false, "verbose output")
+	c.PersistentFlags().StringVarP(&flagFormat, "format", "f", "tty", "output format: tty, json")
 
 	c.Version = version.Get().String()
 
