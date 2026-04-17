@@ -20,15 +20,14 @@ var (
 )
 
 type CheckRule struct {
-	Id      string
-	Enabled bool
-	Error   error
+	Id    string
+	Error error
 }
 
 var CheckRules = map[string]CheckRule{
-	"SCPT0300": {Id: "SCPT0300", Enabled: true, Error: ErrCurlMissingGloboff},
-	"SCPT1800": {Id: "SCPT1800", Enabled: true, Error: ErrRealpathNotSupported},
-	"SCPT1900": {Id: "SCPT1900", Enabled: true, Error: ErrSedSandboxNotSupported},
+	"SCPT0300": {Id: "SCPT0300", Error: ErrCurlMissingGloboff},
+	"SCPT1800": {Id: "SCPT1800", Error: ErrRealpathNotSupported},
+	"SCPT1900": {Id: "SCPT1900", Error: ErrSedSandboxNotSupported},
 }
 
 func (l *Linter) CheckCurlCall(call *syntax.CallExpr) []CheckRule {

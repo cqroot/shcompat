@@ -52,12 +52,11 @@ func New(target string, opts ...Option) (*Linter, error) {
 }
 
 type CheckResult struct {
-	FilePath string           `json:"file"`
-	Line     int              `json:"line"`
-	Column   int              `json:"column"`
-	Text     string           `json:"text"`
-	Cmd      *syntax.CallExpr `json:"cmd"`
-	Rule     CheckRule        `json:"rule"`
+	FilePath string    `json:"file"`
+	Line     int       `json:"line"`
+	Column   int       `json:"column"`
+	Text     string    `json:"text"`
+	Rule     CheckRule `json:"rule"`
 }
 
 type ResultCode int
@@ -104,18 +103,7 @@ func (l *Linter) Run() (ResultCode, error) {
 			return nil
 		}
 
-		switch l.format {
-		case FormatTTY:
-			fmt.Print(ToTTY(failures))
-		case FormatJSON:
-			jsonStr, err := ToJSON(failures)
-			if err != nil {
-				return err
-			}
-			fmt.Println(jsonStr)
-		}
 		allFailures = append(allFailures, failures...)
-
 		return nil
 	})
 	if err != nil {
@@ -127,6 +115,17 @@ func (l *Linter) Run() (ResultCode, error) {
 			color.HiGreen("%s\n", l.FormatSummary(len(allFailures), totalFiles))
 		}
 		return ResultOK, nil
+	}
+
+	switch l.format {
+	case FormatTTY:
+		fmt.Print(ToTTY(allFailures))
+	case FormatJSON:
+		jsonStr, err := ToJSON(allFailures)
+		if err != nil {
+			return ResultError, fmt.Errorf("failed to convert to JSON: %w", err)
+		}
+		fmt.Println(jsonStr)
 	}
 
 	if l.format == FormatTTY {
@@ -247,7 +246,6 @@ func (l *Linter) constructFailures(rules []CheckRule, filePath string, call *syn
 			Line:     line,
 			Column:   column,
 			Text:     text,
-			Cmd:      call,
 			Rule:     rule,
 		}
 		results[i] = res
