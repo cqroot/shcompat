@@ -2,14 +2,15 @@ package linter
 
 import (
 	"fmt"
+	"slices"
 
 	"mvdan.cc/sh/v3/syntax"
 )
 
-var checkers = map[string]func(*syntax.CallExpr) []CheckRule{
-	"curl":     CheckCurlCall,
-	"realpath": CheckRealpathCall,
-	"sed":      CheckSedCall,
+var checkers = map[string]func(*Linter, *syntax.CallExpr) []CheckRule{
+	"curl":     (*Linter).CheckCurlCall,
+	"realpath": (*Linter).CheckRealpathCall,
+	"sed":      (*Linter).CheckSedCall,
 }
 
 var (
@@ -30,8 +31,15 @@ var CheckRules = map[string]CheckRule{
 	"SCPT1900": {Id: "SCPT1900", Enabled: true, Error: ErrSedSandboxNotSupported},
 }
 
-func CheckCurlCall(call *syntax.CallExpr) []CheckRule {
+func (l *Linter) CheckCurlCall(call *syntax.CallExpr) []CheckRule {
 	var rules []CheckRule
+	if len(l.includeRules) > 0 && !slices.Contains(l.includeRules, "SCPT0300") {
+		return rules
+	}
+	if len(l.excludeRules) > 0 && slices.Contains(l.excludeRules, "SCPT0300") {
+		return rules
+	}
+
 	// Check if curl command has -g or --globoff
 	for _, arg := range call.Args[1:] {
 		if arg.Parts == nil {
@@ -50,15 +58,29 @@ func CheckCurlCall(call *syntax.CallExpr) []CheckRule {
 	return rules
 }
 
-func CheckRealpathCall(call *syntax.CallExpr) []CheckRule {
+func (l *Linter) CheckRealpathCall(call *syntax.CallExpr) []CheckRule {
 	var rules []CheckRule
+	if len(l.includeRules) > 0 && !slices.Contains(l.includeRules, "SCPT1800") {
+		return rules
+	}
+	if len(l.excludeRules) > 0 && slices.Contains(l.excludeRules, "SCPT1800") {
+		return rules
+	}
+
 	// Check if realpath command is used
 	rules = append(rules, CheckRules["SCPT1800"])
 	return rules
 }
 
-func CheckSedCall(call *syntax.CallExpr) []CheckRule {
+func (l *Linter) CheckSedCall(call *syntax.CallExpr) []CheckRule {
 	var rules []CheckRule
+	if len(l.includeRules) > 0 && !slices.Contains(l.includeRules, "SCPT1900") {
+		return rules
+	}
+	if len(l.excludeRules) > 0 && slices.Contains(l.excludeRules, "SCPT1900") {
+		return rules
+	}
+
 	// Check if sed command has --sandbox
 	for _, arg := range call.Args[1:] {
 		if arg.Parts == nil {

@@ -10,8 +10,10 @@ import (
 )
 
 var (
-	flagVerbose bool
-	flagFormat  string
+	flagVerbose      bool
+	flagFormat       string
+	flagIncludeRules []string
+	flagExcludeRules []string
 )
 
 func CheckErr(msg interface{}) {
@@ -36,6 +38,8 @@ func RunRootCmd(cmd *cobra.Command, args []string) {
 	l, err := linter.New(target,
 		linter.WithVerbose(flagVerbose),
 		linter.WithFormat(outputFormat),
+		linter.WithIncludeRules(flagIncludeRules),
+		linter.WithExcludeRules(flagExcludeRules),
 	)
 	CheckErr(err)
 	ret, err := l.Run()
@@ -53,6 +57,8 @@ func NewRootCmd() *cobra.Command {
 	}
 	c.PersistentFlags().BoolVarP(&flagVerbose, "verbose", "v", false, "verbose output")
 	c.PersistentFlags().StringVarP(&flagFormat, "format", "f", "tty", "output format: tty, json")
+	c.PersistentFlags().StringSliceVarP(&flagIncludeRules, "include-rules", "i", nil, "include only the specified rules")
+	c.PersistentFlags().StringSliceVarP(&flagExcludeRules, "exclude-rules", "e", nil, "exclude the specified rules")
 
 	c.Version = version.Get().String()
 

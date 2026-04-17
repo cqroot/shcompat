@@ -11,10 +11,12 @@ import (
 )
 
 type Linter struct {
-	rootDir string
-	target  string
-	verbose bool
-	format  Format
+	rootDir      string
+	target       string
+	verbose      bool
+	format       Format
+	includeRules []string
+	excludeRules []string
 }
 
 type Option func(*Linter)
@@ -209,7 +211,7 @@ func (l *Linter) CheckSyntaxNode(node syntax.Node, filePath string, src string, 
 
 		cmdName := strings.TrimSuffix(lit.Value, ".exe")
 		if val, exists := checkers[cmdName]; exists {
-			rules := val(call)
+			rules := val(l, call)
 			if len(rules) > 0 {
 				results := l.constructFailures(rules, filePath, call, src)
 				*failures = append(*failures, results...)
