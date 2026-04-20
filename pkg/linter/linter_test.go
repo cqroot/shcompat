@@ -89,25 +89,64 @@ var testCases = []TestCase{
 			},
 		},
 	},
+	{
+		name: "realpath command with extra spaces",
+		src:  "  realpath /path/to/file  ",
+		expected: []linter.CheckResult{
+			{
+				Line:   1,
+				Column: 3,
+				Text:   "realpath /path/to/file",
+				Rule:   linter.CheckRules["SCPT1800"],
+			},
+		},
+	},
+	{
+		name: "realpath command in pipeline",
+		src:  "echo /path/to/file | realpath",
+		expected: []linter.CheckResult{
+			{
+				Line:   1,
+				Column: 22,
+				Text:   "realpath",
+				Rule:   linter.CheckRules["SCPT1800"],
+			},
+		},
+	},
+	{
+		name: "grep command with stray backslash",
+		src:  `grep "pattern\ with\ backslash" file.txt`,
+		expected: []linter.CheckResult{
+			{
+				Line:   1,
+				Column: 1,
+				Text:   `grep "pattern\ with\ backslash" file.txt`,
+				Rule:   linter.CheckRules["SCPT0700"],
+			},
+		},
+	},
+	{
+		name:     "grep command without stray backslash",
+		src:      `grep "pattern with backslash" file.txt`,
+		expected: []linter.CheckResult{},
+	},
+	{
+		name:     "grep command with escaped backslash",
+		src:      `grep "pattern\\ with\\ backslash" file.txt`,
+		expected: []linter.CheckResult{},
+	},
 }
 
 func TestLinter(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			l, err := linter.New("")
-			if err != nil {
-				t.Fatalf("failed to create linter: %v", err)
-			}
+			require.Nil(t, err)
 
 			results, err := l.CheckShellContent(tt.src, "")
-			if err != nil {
-				t.Fatalf("CheckShellContent error: %v", err)
-			}
+			require.Nil(t, err)
 
 			require.Equal(t, len(tt.expected), len(results))
-			if len(results) != len(tt.expected) {
-				t.Fatalf("expected %d results, got %d", len(tt.expected), len(results))
-			}
 
 			for i, res := range results {
 				require.Equal(t, tt.expected[i].Line, res.Line)

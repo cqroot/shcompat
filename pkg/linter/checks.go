@@ -9,14 +9,16 @@ import (
 
 var checkers = map[string]func(*Linter, *syntax.CallExpr) []CheckRule{
 	"curl":     (*Linter).CheckCurlCall,
+	"grep":     (*Linter).CheckGrepCall,
 	"realpath": (*Linter).CheckRealpathCall,
 	"sed":      (*Linter).CheckSedCall,
 }
 
 var (
-	ErrSedSandboxNotSupported = fmt.Errorf("sed --sandbox is not supported in older sed versions")
 	ErrCurlMissingGloboff     = fmt.Errorf("curl command is missing -g or --globoff argument")
+	ErrGrepStrayBackslash     = fmt.Errorf("grep command has a pattern with a stray backslash, which may cause issues in some versions of grep")
 	ErrRealpathNotSupported   = fmt.Errorf("realpath command is not supported in older coreutils versions")
+	ErrSedSandboxNotSupported = fmt.Errorf("sed --sandbox is not supported in older sed versions")
 )
 
 type CheckRule struct {
@@ -26,6 +28,7 @@ type CheckRule struct {
 
 var CheckRules = map[string]CheckRule{
 	"SCPT0300": {Id: "SCPT0300", Error: ErrCurlMissingGloboff},
+	"SCPT0700": {Id: "SCPT0700", Error: ErrGrepStrayBackslash},
 	"SCPT1800": {Id: "SCPT1800", Error: ErrRealpathNotSupported},
 	"SCPT1900": {Id: "SCPT1900", Error: ErrSedSandboxNotSupported},
 }
@@ -54,6 +57,60 @@ func (l *Linter) CheckCurlCall(call *syntax.CallExpr) []CheckRule {
 	}
 
 	rules = append(rules, CheckRules["SCPT0300"])
+	return rules
+}
+
+func containsStrayBackslash(s string) bool {
+	for i := 0; i < len(s); i++ {
+		if s[i] == '\\' {
+			if i+1 < len(s) && s[i+1] == '\\' {
+				i++ // skip the escaped backslash
+			} else {
+				return true // stray backslash
+			}
+		}
+	}
+	return false
+}
+
+func containsStrayBackslashInWordPart(part syntax.WordPart) bool {
+	switch p := part.(type) {
+	case *syntax.Lit:
+		return containsStrayBackslash(p.Value)
+	case *syntax.SglQuoted:
+		return containsStrayBackslash(p.Value)
+	case *syntax.DblQuoted:
+		for _, nested := range p.Parts {
+			if containsStrayBackslashInWordPart(nested) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func (l *Linter) CheckGrepCall(call *syntax.CallExpr) []CheckRule {
+	var rules []CheckRule
+	if len(l.includeRules) > 0 && !slices.Contains(l.includeRules, "SCPT0700") {
+		return rules
+	}
+	if len(l.excludeRules) > 0 && slices.Contains(l.excludeRules, "SCPT0700") {
+		return rules
+	}
+
+	// Check if grep command has a pattern with a stray backslash
+	for _, arg := range call.Args {
+		if arg.Parts == nil {
+			continue
+		}
+		for _, part := range arg.Parts {
+			if containsStrayBackslashInWordPart(part) {
+				rules = append(rules, CheckRules["SCPT0700"])
+				return rules
+			}
+		}
+	}
+
 	return rules
 }
 
