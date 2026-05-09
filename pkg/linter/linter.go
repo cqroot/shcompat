@@ -209,8 +209,8 @@ func (l *Linter) CheckSyntaxNode(node syntax.Node, filePath string, src string, 
 		}
 
 		cmdName := strings.TrimSuffix(lit.Value, ".exe")
-		if val, exists := checkers[cmdName]; exists {
-			rules := val(l, call)
+		if checker, exists := checkers[cmdName]; exists {
+			rules := checker.CheckFunc(l, call)
 			if len(rules) > 0 {
 				results := l.constructFailures(rules, filePath, call, src)
 				*failures = append(*failures, results...)

@@ -7,11 +7,15 @@ import (
 	"mvdan.cc/sh/v3/syntax"
 )
 
-var checkers = map[string]func(*Linter, *syntax.CallExpr) []CheckRule{
-	"curl":     (*Linter).CheckCurlCall,
-	"grep":     (*Linter).CheckGrepCall,
-	"realpath": (*Linter).CheckRealpathCall,
-	"sed":      (*Linter).CheckSedCall,
+type Checker struct {
+	CheckFunc func(*Linter, *syntax.CallExpr) []CheckRule
+}
+
+var checkers = map[string]Checker{
+	"curl":     {CheckFunc: (*Linter).CheckCurlCall},
+	"grep":     {CheckFunc: (*Linter).CheckGrepCall},
+	"realpath": {CheckFunc: (*Linter).CheckRealpathCall},
+	"sed":      {CheckFunc: (*Linter).CheckSedCall},
 }
 
 var (
